@@ -25,8 +25,8 @@ var g_highlighted_sector_in_vf = -1;  // sector to highlight in VF plot
 var g_cwidth = get_xmax();            // virtual pixels   (all scaling done relative to this)
 var g_cheight = get_ymax();
 
+var   g_d2p = 10;  // scaling factor to convert 1 degree into virtual pixels
 const g_axis_width = 100;               // virtual pixels
-const g_d2p = 10;  // scaling factor to convert 1 degree into virtual pixels
 const g_radius_vf_loc = 15;   // virtual pixels
 const g_onh_key_radius = 11 * g_d2p; // virtual pixels
 
@@ -78,9 +78,8 @@ function get_centre_of_VF() {
     // If g_highlighted_sector_in_vf > -1, then shade those points
     // pass canvas context
 function draw_vf_locs(ctx) {
-
-             // left eye VF, right eye Retina
-   const tfd2_locs = [         [9,-21], [3,-21], [-3,-21], [-9,-21], 
+             // 24-2 left eye VF, right eye Retina
+   var   locs =      [         [9,-21], [3,-21], [-3,-21], [-9,-21], 
                      [15,-15], [9,-15], [3,-15], [-3,-15], [-9,-15], [-15,-15], 
             [21,-9], [15, -9], [9, -9], [3, -9], [-3, -9], [-9, -9], [-15, -9], [-21,-9], 
    [27,-3], [21,-3], [15, -3], [9, -3], [3, -3], [-3, -3], [-9, -3],            [-21,-3], 
@@ -89,15 +88,82 @@ function draw_vf_locs(ctx) {
                      [15, 15], [9, 15], [3, 15], [-3, 15], [-9, 15], [-15, 15],
                                [9, 21], [3, 21], [-3, 21], [-9, 21]];
 
+    g_d2p = 10;
+
+    if (g_pattern == PATTERN_G) {
+    locs = [
+[  8, 26],
+[ -8, 26],
+[ 20, 20],
+[ 12, 20],
+[  4, 20],
+[ -4, 20],
+[-12, 20],
+[-20, 20],
+[  4, 14],
+[ -4, 14],
+[ 20, 12],
+[ 12, 12],
+[-12, 12],
+[-20, 12],
+[  8,  8],
+[  2,  8],
+[ -2,  8],
+[ -8,  8],
+[-26,  8],
+[ 26,  4],
+[ 20,  4],
+[ 14,  4],
+[  4,  4],
+[ -4,  4],
+[-22,  4],
+[  8,  2],
+[  2,  2],
+[ -2,  2],
+[ -8,  2],
+[  0,  0],
+[  8, -2],
+[  2, -2],
+[ -2, -2],
+[ -8, -2],
+[ 26, -4],
+[ 20, -4],
+[ 14, -4],
+[  4, -4],
+[ -4, -4],
+[-22, -4],
+[  8, -8],
+[  3, -9],
+[ -3, -9],
+[ -8, -8],
+[-26, -8],
+[ 20,-12],
+[ 12,-12],
+[-12,-12],
+[-20,-12],
+[  4,-14],
+[ -4,-14],
+[ 20,-20],
+[ 12,-20],
+[  4,-20],
+[ -4,-20],
+[-12,-20],
+[-20,-20],
+[  8,-26],
+[ -8,-26]
+];
+    g_d2p = 8;
+}
+
     const [cx, cy] = get_centre_of_VF();
     const xm = g_eye == EYE_LEFT ? 1 : -1 ; 
     const mcols = map_cols[g_onhx + 18.0][g_onhy + 2.0][g_raphe -161];
 
         // draw VF
     const radius = scale(g_radius_vf_loc);
-    for (var i = 0 ; i < tfd2_locs.length ; i++) {
-        var x = scale(cx + xm * tfd2_locs[i][0] * g_d2p);
-        var y = yscale(cy - tfd2_locs[i][1] * g_d2p);      // note - as (0,0) is top left
+    for (var i = 0 ; i < locs.length ; i++) {
+        var x = scale(cx + xm * locs[i][0] * g_d2p);
+        var y = yscale(cy - locs[i][1] * g_d2p);      // note - as (0,0) is top left
 
         var sector = mcols[i]-1; // note -1 as javascript starts at 0
         if (g_highlighted_sector_in_vf - 100 == sector) {
@@ -311,10 +377,9 @@ function draw_canvas() {
     ctx.textBaseline="middle"; 
     ctx.font = scale(20) + "px Arial";
     ss = "ONH = (" + g_onhx * (g_eye == EYE_RIGHT ? -1 : 1) + ", " + g_onhy + ")";
-    ctx.fillText(ss, scale(g_cwidth - 160), yscale(g_cheight - 50));
+    ctx.fillText(ss, scale(g_cwidth - 90), yscale(g_cheight - 50));
     ss = "DiFoRaphe = " + g_raphe;
-    ctx.fillText(ss, scale(g_cwidth - 200), yscale(g_cheight - 20));
-
+    ctx.fillText(ss, scale(g_cwidth - 130), yscale(g_cheight - 20));
 }
 
 window.onresize = function() { draw_canvas(); } 
