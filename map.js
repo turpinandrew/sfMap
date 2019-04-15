@@ -252,7 +252,9 @@ window.onload = function() {
     var c = document.getElementById('canvasImage');
     c.addEventListener('click', handle_clicks, false);
     c.addEventListener('mousedown', handle_mousedown, false);
+    c.addEventListener('touchstart', handle_mousedown, false);
     c.addEventListener('mouseup', handle_mouseup, false);
+    c.addEventListener('touchend', handle_mouseup, false);
 }
 
     // From (x,y) in real canvas coords, get new g_onhx,g_onhy in virtual coords.
