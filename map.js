@@ -319,6 +319,9 @@ function get_xy_from_event(e) {
 }
 
 function handle_mousemove(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
     const [x, y, label, min_d] = get_xy_from_event(e);
 
     if (g_dragging == DRAG_NONE) {
@@ -340,6 +343,9 @@ function handle_mousemove(e) {
 }
 
 function handle_mousedown(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
     const [x, y, label, min_d] = get_xy_from_event(e);
 
     if (label == REGION_RAPHE_END) g_dragging = DRAG_RAPHE;
@@ -351,6 +357,9 @@ function handle_mousedown(e) {
 }
 
 function handle_mouseup(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
     const [x, y, label, min_d] = get_xy_from_event(e);
 
     if (g_dragging == DRAG_ONH) {
