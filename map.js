@@ -83,8 +83,8 @@ function draw_canvas() {
     var can = document.getElementById('canvasImage')
     var ctx = can.getContext('2d');
     ctx.clearRect(0, 0, can.width, can.height);
-    ctx.rect(0, 0, can.width, can.height);
-    ctx.stroke();
+    //ctx.rect(0, 0, can.width, can.height);
+    //ctx.stroke();
 
     const xm = g_eye == EYE_RIGHT ? 1 : -1 ; 
     const mcols = map_cols[g_onhx + 18.0][g_onhy + 2.0][g_raphe -161];
