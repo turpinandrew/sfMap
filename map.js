@@ -17,7 +17,17 @@
     Date: Mon 15 Apr 2019 12:10:10 AEST
 */
 
-const scols = ["#00008F","#0000EA","#0047FF","#00A2FF","#00FEFF","#5AFFA5", "#B5FF4A","#FFED00","#FF9200","#FF3700","#DB0000","#800000"];
+    // anticlockwise
+const g_scols_30 = ["#00008F","#0000EA","#0047FF","#00A2FF","#00FEFF","#5AFFA5", "#B5FF4A","#FFED00","#FF9200","#FF3700","#DB0000","#800000"];
+const g_secs_30 = [ [-0.2618, 0.2618], [-0.7854, -0.2618], [-1.3090, -0.7854], [-1.8326, -1.3090], [-2.3562, -1.8326], [-2.8798, -2.3562], [-3.4034, -2.8798], [-3.9270, -3.4034], [-4.4506, -3.9270], [-4.9742, -4.4506], [-5.4978, -4.9742], [-6.0214, -5.4978]];
+const g_scols_ted = ["#00008F","#0047FF","#00FEFF","#B5FF4A","#FF9200","#DB0000"];
+const g_secs_ted = [ [-0.7853,0.7853], [-1.5707,-0.7853], [-2.3561,-1.5707], [-3.9269,-2.3561], [-4.7123,-3.9269], [-5.4977,-4.7123]];
+
+const SECTOR_30 = 0;  // 30 degree sectors
+const SECTOR_GH = 1;  // teds
+var g_sector_type = SECTOR_30;
+var g_scols = g_scols_30;
+var g_secs = g_secs_30;
 
 var g_exploding_sector = -1;  // sector to explode out of ONH pie
 var g_highlighted_sector_in_vf = -1;  // sector to highlight in VF plot
@@ -49,6 +59,9 @@ const REGION_RAPHE_END = 14;
 const REGION_ONHX      = 15;
 const REGION_ONHY      = 16;
 const REGION_PATTERN   = 17;
+const REGION_SECS      = 18;
+const REGION_FILE      = 19;
+const REGION_HELP      = 20;
 
 const DRAG_NONE = 0
 const DRAG_ONH = 1
@@ -61,6 +74,9 @@ var g_dragging = DRAG_NONE;
 const PATTERN_242 = 0;
 const PATTERN_G = 1;
 var g_pattern = PATTERN_242;
+
+var g_img = new Image();
+g_img.src = "./buttons.png";
 
     // Return Euclidean distance between image_points[i1] and image_points[i2]
 function distance(i1, i2) {
@@ -157,7 +173,11 @@ function draw_vf_locs(ctx) {
 
     const [cx, cy] = get_centre_of_VF();
     const xm = g_eye == EYE_LEFT ? 1 : -1 ; 
-    const mcols = map_cols[g_onhx + 18.0][g_onhy + 2.0][g_raphe -161];
+    if (g_sector_type == SECTOR_30) {
+        mcols = map_cols[g_onhx + 18.0][g_onhy + 2.0][g_raphe -161];
+    } else {
+        mcols = map_cols_t[g_onhx + 18.0][g_onhy + 2.0][g_raphe -161];
+    }
 
         // draw VF
     const radius = scale(g_radius_vf_loc);
@@ -176,8 +196,8 @@ function draw_vf_locs(ctx) {
         }
         ctx.beginPath();
         ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
-        ctx.strokeStyle = scols[sector];
-        ctx.fillStyle = scols[sector];
+        ctx.strokeStyle = g_scols[sector];
+        ctx.fillStyle = g_scols[sector];
         ctx.fill();
         ctx.closePath();
 
@@ -291,34 +311,36 @@ function draw_onh_key(ctx) {
     const onh_key_x = scale(g_axis_width + g_cwidth * 12 / 16);
     const onh_key_y = yscale(cy); 
 
-    for (i = 0 ; i < scols.length ; i++) {
+    for (i = 0 ; i < g_secs.length ; i++) {
         explode_factor = i == g_exploding_sector ? scale(10) : 0;
 
-        if (g_eye == EYE_RIGHT)
-            s = (-15 - i*30)/180*Math.PI;
-        else
-            s = (180 - 15 + i*30)/180*Math.PI;
+        var s = g_secs[i][0];
+        var e = g_secs[i][1];
+        if (g_eye == EYE_RIGHT) {
+            s = Math.PI - s;
+            e = Math.PI - e;
+        }
+        const theta = (s+e)/2;
 
         ctx.save()
         ctx.beginPath();
         ctx.scale(1, 1.3);
-        var theta = (g_eye == EYE_LEFT ? (180 - i*30) : i*30) / 180*Math.PI;
-        var xx = onh_key_x + explode_factor*Math.cos(theta);
-        var yy = onh_key_y - explode_factor*Math.sin(theta);
-        ctx.arc (xx, yy/1.3, onh_key_radius, s+30/180*Math.PI, s, true);
+        const xx = onh_key_x + explode_factor*Math.cos(theta);
+        const yy = onh_key_y + explode_factor*Math.sin(theta);
+        ctx.arc (xx, yy/1.3, onh_key_radius, e, s, g_eye == EYE_LEFT);
         ctx.lineTo(xx,yy/1.3);
-        ctx.fillStyle = scols[i];
+        ctx.fillStyle = g_scols[i];
         ctx.fill();
         ctx.restore();
 
-        g_regions.push([xx + onh_key_radius/2*Math.cos(s+15/180*Math.PI), 
-                        yy + onh_key_radius/2*Math.sin(s+15/180*Math.PI), 
+        g_regions.push([xx + onh_key_radius/2*Math.cos(theta), 
+                        yy + onh_key_radius/2*Math.sin(theta), 
                         100 + i]);
     }
 
         // Add TSNIT annotations
     ctx.fillStyle = "black";
-    if (g_eye == EYE_LEFT) {
+    if (g_eye == EYE_RIGHT) {
         ctx.textAlign = "right";
         ctx.fillText("N", onh_key_x + onh_key_radius, onh_key_y);
         ctx.fillStyle = "white";
@@ -361,6 +383,7 @@ function draw_canvas() {
     draw_onh_and_raphe(ctx);
     draw_onh_key(ctx);
 
+    /*
         // draw Eye Label Region
     ctx.textBaseline="middle"; 
     ctx.font = scale(30) + "px Arial";
@@ -380,6 +403,40 @@ function draw_canvas() {
     ctx.fillText(ss, scale(g_cwidth - 90), yscale(g_cheight - 50));
     ss = "DiFoRaphe = " + g_raphe;
     ctx.fillText(ss, scale(g_cwidth - 130), yscale(g_cheight - 20));
+
+        // draw ted/30 swapper
+    ss = g_sector_type == SECTOR_30 ? "Teds" : "30";
+    ctx.fillText(ss, scale(g_cwidth - 90), yscale(g_cheight - 100));
+    g_regions.push([scale(g_cwidth - 90), yscale(g_cheight - 100), REGION_SECS]);
+    */
+
+    const button_left = 680;   // virtual coords
+    const button_top = 430;
+    const button_height = 55;
+    const button_all_w = 300;
+    if (g_img.complete) {
+        ctx.drawImage(g_img, scale(button_left), yscale(button_top), dWidth=scale(button_all_w), dHeight=yscale(button_height));
+    } else {
+        img.onload = function() {ctx.drawImage(g_img, scale(button_left), yscale(button_top), dWidth=scale(button_all_w),
+dHeight=yscale(button_height));};
+    }
+    /*
+    ctx.beginPath();
+    ctx.arc(scale(button_left + 25), yscale(button_top + button_height/2), scale(10), 0, 2*Math.PI);
+    ctx.arc(scale(button_left + 3.5*25), yscale(button_top + button_height/2), scale(10), 0, 2*Math.PI);
+    ctx.arc(scale(button_left + 6*25), yscale(button_top + button_height/2), scale(10), 0, 2*Math.PI);
+    ctx.arc(scale(button_left + 8.5*25), yscale(button_top + button_height/2), scale(10), 0, 2*Math.PI);
+    ctx.arc(scale(button_left + 11*25), yscale(button_top + button_height/2), scale(10), 0, 2*Math.PI);
+    ctx.fillStyle = "#ff0000";
+    ctx.strokeStyle = "#ff0000";
+    ctx.fill();
+    ctx.closePath();
+    */
+    g_regions.push([scale(button_left +    25), yscale(button_top + button_height/2), REGION_EYE]);
+    g_regions.push([scale(button_left + 3.5*25), yscale(button_top + button_height/2), REGION_PATTERN]);
+    g_regions.push([scale(button_left + 6.0*25), yscale(button_top + button_height/2), REGION_SECS]);
+    g_regions.push([scale(button_left + 8.5*25), yscale(button_top + button_height/2), REGION_FILE]);
+    g_regions.push([scale(button_left + 11 *25), yscale(button_top + button_height/2), REGION_HELP]);
 }
 
 window.onresize = function() { draw_canvas(); } 
@@ -387,21 +444,28 @@ window.onresize = function() { draw_canvas(); }
 window.onload = function() {
     var c = document.getElementById('canvasImage');
     c.addEventListener('click', handle_clicks, false);
+    c.addEventListener('touchstart', handle_clicks, false);
+
     c.addEventListener('mousedown', handle_mousedown, false);
-    c.addEventListener('touchstart', handle_mousedown, false);
+    c.addEventListener('touchmove', handle_mousedown, false);
+
     c.addEventListener('mouseup', handle_mouseup, false);
     c.addEventListener('touchend', handle_mouseup, false);
 }
 
-    // From (x,y) in real canvas coords, get new g_onhx,g_onhy in virtual coords.
+    // From (x,y) in real canvas coords. 
+    // Either could be NaN, which means no change to existing.
+    // Return new g_onhx,g_onhy in virtual coords.
     // And redraw
 function set_new_onh(x,y) {
     const [cx,cy] = get_centre_of_VF();
 
-    var x_deg = Math.round((unscale(x) - cx) / g_d2p);
-    var y_deg = Math.round((yunscale(y) - cy) / g_d2p);
+    var x_deg = g_onhx;
+    var y_deg = g_onhy;
+
+    if (!isNaN(x)) { x_deg = -1 * Math.abs(Math.round((unscale(x) - cx) / g_d2p)); }
+    if (!isNaN(y)) { y_deg = Math.round((yunscale(y) - cy) / g_d2p);}
     
-    x_deg = -1 * Math.abs(x_deg);
     if (x_deg < -18) x_deg = -18;
     if (x_deg > -12) x_deg = -12;
     
@@ -476,9 +540,9 @@ function handle_mousemove(e) {
     } else if (g_dragging == DRAG_ONH) {
         set_new_onh(x,y);
     } else if (g_dragging == DRAG_ONHX) {
-        set_new_onh(x, yscale(g_onhy));
+        set_new_onh(x, Number.NaN);
     } else if (g_dragging == DRAG_ONHY) {
-        set_new_onh(scale(g_onhx), y);
+        set_new_onh(Number.NaN, y);
     } else if (g_dragging == DRAG_RAPHE) {
         set_new_raphe(x,y);
     }
@@ -507,9 +571,9 @@ function handle_mouseup(e) {
     if (g_dragging == DRAG_ONH) {
         set_new_onh(x,y);
     } else if (g_dragging == DRAG_ONHX) {
-        set_new_onh(x, yscale(g_onhy));
+        set_new_onh(x, Number.NaN);
     } else if (g_dragging == DRAG_ONHY) {
-        set_new_onh(scale(g_onhx), y);
+        set_new_onh(Number.NaN, y);
     } else if (g_dragging == DRAG_RAPHE) {
         set_new_raphe(x, y);
     }
@@ -528,4 +592,28 @@ function handle_clicks(e) {
         g_pattern = g_pattern == PATTERN_242 ? PATTERN_G : PATTERN_242;
         draw_canvas();
     } 
+
+    if (label == REGION_SECS) {
+        g_sector_type = g_sector_type == SECTOR_30 ? SECTOR_GH : SECTOR_30;
+        g_scols = g_sector_type == SECTOR_30 ? g_scols_30 : g_scols_ted;
+        g_secs  = g_sector_type == SECTOR_30 ? g_secs_30 : g_secs_ted;
+        draw_canvas();
+    }
+
+    if (label == REGION_HELP) {
+        alert("\
+The ONH, purple text, raphe end are all draggable.\n\
+Eye button switches left/right eyes.\n\
+Pattern button toggles 242-2 and G patterns.\n\
+Wheel button toggles Garway-Heath and 30 degree sectors.\n\
+OCT button allows you to derive parameters from an image file.\n\
+? button is this help.\n\n\
+This is a limited subset of the maps generated from Dennis et al., \
+Invest Ophthalmol Vis Sci. 53(11) 2012. Pages 6981-6990.\
+");
+    }
+
+    if (label == REGION_FILE) {
+        alert("Coming soon");
+    }
 }
