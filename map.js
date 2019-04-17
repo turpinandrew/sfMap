@@ -298,6 +298,7 @@ function draw_onh_and_raphe(ctx) {
     ctx.fillStyle = 'black';
     ctx.fill();
     ctx.closePath();
+    ctx.fillText(g_raphe, raphe_end_x, raphe_end_y+yscale(-12));
 
     g_regions.push([x, y, REGION_ONH]);
     g_regions.push([raphe_end_x, raphe_end_y, REGION_RAPHE_END]);
