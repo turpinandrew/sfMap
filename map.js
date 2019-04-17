@@ -62,6 +62,7 @@ const REGION_PATTERN   = 17;
 const REGION_SECS      = 18;
 const REGION_FILE      = 19;
 const REGION_HELP      = 20;
+const REGION_NONE      = 21;
 
 const DRAG_NONE = 0
 const DRAG_ONH = 1
@@ -418,7 +419,7 @@ function draw_canvas() {
     if (g_img.complete) {
         ctx.drawImage(g_img, scale(button_left), yscale(button_top), dWidth=scale(button_all_w), dHeight=yscale(button_height));
     } else {
-        img.onload = function() {ctx.drawImage(g_img, scale(button_left), yscale(button_top), dWidth=scale(button_all_w),
+        g_img.onload = function() {ctx.drawImage(g_img, scale(button_left), yscale(button_top), dWidth=scale(button_all_w),
 dHeight=yscale(button_height));};
     }
     /*
@@ -502,12 +503,26 @@ function set_new_raphe(x,y) {
 // return [x,y,label,min_distance] for event e
 // min_distance is square of pixel distance in real pixels
 function get_xy_from_event(e) {
-    var x = e.clientX;
-    var y = e.clientY;
-    var can = document.getElementById('canvasImage');
-    var rect = can.getBoundingClientRect();
-    x = x/rect.width * can.width;
-    y = y/rect.height * can.height;
+    if (e.type == 'touchend') { return [0,0,REGION_NONE,0]; }
+
+    var x = 0;
+    var y = 0;
+    if (e.type == 'touchstart' || e.type == 'touchmove') {
+console.log("TC " + e.touches[0].clientX + " " + e.touches[0].clientY);
+        x = e.touches[0].clientX;
+        y = e.touches[0].clientY;
+    } else {
+console.log("MC " + e.clientX + " " + e.clientY);
+        x = e.clientX;
+        y = e.clientY;
+    }
+
+        var can = document.getElementById('canvasImage');
+        var rect = can.getBoundingClientRect();
+        x = x/rect.width * can.width;
+        y = y/rect.height * can.height;
+
+console.log(x + " " + y + " " + g_dragging);
 
     min_i = -1;
     min_d = g_cwidth * g_cwidth * g_cheight;
@@ -522,6 +537,18 @@ function get_xy_from_event(e) {
     return [x, y, g_regions[min_i][2], min_d];
 }
 
+function check_hovers(label, min_d) {
+    if (0 <= label && label < 12 && min_d <= Math.pow(scale(2 * g_radius_vf_loc),2)) {
+        g_exploding_sector = label;
+    } else if (label >= 100 && min_d <= Math.pow(scale(1.0 * g_onh_key_radius),2)) {
+        g_highlighted_sector_in_vf = label;
+    } else {
+        g_exploding_sector = -1;
+        g_highlighted_sector_in_vf = -1;
+    }
+    draw_canvas();
+}
+
 function handle_mousemove(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -529,15 +556,7 @@ function handle_mousemove(e) {
     const [x, y, label, min_d] = get_xy_from_event(e);
 
     if (g_dragging == DRAG_NONE) {
-        if (0 <= label && label < 12 && min_d <= Math.pow(scale(2 * g_radius_vf_loc),2)) {
-            g_exploding_sector = label;
-        } else if (label >= 100 && min_d <= Math.pow(scale(1.0 * g_onh_key_radius),2)) {
-            g_highlighted_sector_in_vf = label;
-        } else {
-            g_exploding_sector = -1;
-            g_highlighted_sector_in_vf = -1;
-        }
-        draw_canvas();
+        check_hovers(label, min_d);
     } else if (g_dragging == DRAG_ONH) {
         set_new_onh(x,y);
     } else if (g_dragging == DRAG_ONHX) {
@@ -549,18 +568,21 @@ function handle_mousemove(e) {
     }
 }
 
-function handle_mousedown(e) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const [x, y, label, min_d] = get_xy_from_event(e);
-
+function check_drag(label) {
     if (label == REGION_RAPHE_END) g_dragging = DRAG_RAPHE;
     else if (label == REGION_ONH)  g_dragging = DRAG_ONH;
     else if (label == REGION_ONHX) g_dragging = DRAG_ONHX;
     else if (label == REGION_ONHY) g_dragging = DRAG_ONHY;
     else
         g_dragging = DRAG_NONE;
+}
+
+function handle_mousedown(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const [x, y, label, min_d] = get_xy_from_event(e);
+    check_drag(label);
 }
 
 function handle_mouseup(e) {
@@ -609,12 +631,18 @@ Pattern button toggles 242-2 and G patterns.\n\
 Wheel button toggles Garway-Heath and 30 degree sectors.\n\
 OCT button allows you to derive parameters from an image file.\n\
 ? button is this help.\n\n\
-This is a limited subset of the maps generated from Dennis et al., \
-Invest Ophthalmol Vis Sci. 53(11) 2012. Pages 6981-6990.\
+This is a subset of the maps generated from improvements to \
+Dennis et al., Invest Ophthalmol Vis Sci. 53(11) 2012. Pages 6981-6990. \
+The method can generate a map for any inputs or visual field patterns.\
 ");
     }
 
     if (label == REGION_FILE) {
         alert("Coming soon");
+    }
+
+    if (e.type == "touchstart") {
+        check_hovers(label, min_d);
+        check_drag(label);
     }
 }
