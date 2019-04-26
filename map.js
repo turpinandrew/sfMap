@@ -13,15 +13,17 @@
     size of (get_xmax, get_ymax). These are scaled into real pixels 
     using scale() and yscale().
 
+    Sectors are numbered from 0 at temporal retina, clockwise for left eye.
+
     Author: Andrew Turpin (aturpin@unimelb.edu.au)
     Date: Mon 15 Apr 2019 12:10:10 AEST
 */
 
-    // anticlockwise
+    // clockwise left eye.
 const g_scols_30 = ["#00008F","#0000EA","#0047FF","#00A2FF","#00FEFF","#5AFFA5", "#B5FF4A","#FFED00","#FF9200","#FF3700","#DB0000","#800000"];
-const g_secs_30 = [ [-0.2618, 0.2618], [-0.7854, -0.2618], [-1.3090, -0.7854], [-1.8326, -1.3090], [-2.3562, -1.8326], [-2.8798, -2.3562], [-3.4034, -2.8798], [-3.9270, -3.4034], [-4.4506, -3.9270], [-4.9742, -4.4506], [-5.4978, -4.9742], [-6.0214, -5.4978]];
+const g_secs_30 = [ [-0.2618, 0.2618], [-0.7854, -0.2618], [-1.3090, -0.7854], [-1.8326, -1.3090], [-2.3562, -1.8326], [-2.8798, -2.3562], [-3.4034, -2.8798], [-3.9270, -3.4034], [-4.4506, -3.9270], [-4.9742, -4.4506], [-5.4978, -4.9742], [-6.0214, -5.4978]]; // radians
 const g_scols_ted = ["#00008F","#0047FF","#00FEFF","#B5FF4A","#FF9200","#DB0000"];
-const g_secs_ted = [ [-0.7853,0.7853], [-1.5707,-0.7853], [-2.3561,-1.5707], [-3.9269,-2.3561], [-4.7123,-3.9269], [-5.4977,-4.7123]];
+const g_secs_ted = [ [-0.7853,0.7853], [-1.5707,-0.7853], [-2.3561,-1.5707], [-3.9269,-2.3561], [-4.7123,-3.9269], [-5.4977,-4.7123]]; // radians
 
 const SECTOR_30 = 0;  // 30 degree sectors
 const SECTOR_GH = 1;  // teds
@@ -32,13 +34,15 @@ var g_secs = g_secs_30;
 var g_exploding_sector = -1;  // sector to explode out of ONH pie
 var g_highlighted_sector_in_vf = -1;  // sector to highlight in VF plot
 
+    // ASSUMES scaleable_canvas.js has been loaded.
 var g_cwidth = get_xmax();            // virtual pixels   (all scaling done relative to this)
 var g_cheight = get_ymax();
 
-var   g_d2p = 10;  // scaling factor to convert 1 degree into virtual pixels
-const g_axis_width = 100;               // virtual pixels
-const g_radius_vf_loc = 15;   // virtual pixels
-const g_onh_key_radius = 11 * g_d2p; // virtual pixels
+const g_cx = 0.4 * g_cwidth;      // centre of VF in virtual pixels
+const g_cy = g_cheight / 2 - 20;       // centre of VF in virtual pixels
+const g_radius_vf_loc = 15;       // virtual pixels
+const g_onh_key_radius = 110;     // virtual pixels
+var   g_d2p =  9;                 // scaling factor to convert 1 degree into virtual pixels
 
 const EYE_LEFT = 0
 const EYE_RIGHT = 1
@@ -86,11 +90,6 @@ function distance(i1, i2) {
     return (Math.sqrt(Math.pow(dx,2) + Math.pow(dy, 2)))
 }
 
-    // return centre of VF in virtual coords, not actual scaled coords
-function get_centre_of_VF() {
-    return [g_axis_width + 30*g_d2p + g_radius_vf_loc , g_cheight / 2 - g_axis_width/2]; 
-}
-
     // Draw the visual field locations colored by sector
     // If g_highlighted_sector_in_vf > -1, then shade those points
     // pass canvas context
@@ -105,198 +104,165 @@ function draw_vf_locs(ctx) {
                      [15, 15], [9, 15], [3, 15], [-3, 15], [-9, 15], [-15, 15],
                                [9, 21], [3, 21], [-3, 21], [-9, 21]];
 
-    g_d2p = 10;
-
     if (g_pattern == PATTERN_G) {
     locs = [
-[  8, 26],
-[ -8, 26],
-[ 20, 20],
-[ 12, 20],
-[  4, 20],
-[ -4, 20],
-[-12, 20],
-[-20, 20],
-[  4, 14],
-[ -4, 14],
-[ 20, 12],
-[ 12, 12],
-[-12, 12],
-[-20, 12],
-[  8,  8],
-[  2,  8],
-[ -2,  8],
-[ -8,  8],
-[-26,  8],
-[ 26,  4],
-[ 20,  4],
-[ 14,  4],
-[  4,  4],
-[ -4,  4],
-[-22,  4],
-[  8,  2],
-[  2,  2],
-[ -2,  2],
-[ -8,  2],
-[  0,  0],
-[  8, -2],
-[  2, -2],
-[ -2, -2],
-[ -8, -2],
-[ 26, -4],
-[ 20, -4],
-[ 14, -4],
-[  4, -4],
-[ -4, -4],
-[-22, -4],
-[  8, -8],
-[  3, -9],
-[ -3, -9],
-[ -8, -8],
-[-26, -8],
-[ 20,-12],
-[ 12,-12],
-[-12,-12],
-[-20,-12],
-[  4,-14],
-[ -4,-14],
-[ 20,-20],
-[ 12,-20],
-[  4,-20],
-[ -4,-20],
-[-12,-20],
-[-20,-20],
-[  8,-26],
-[ -8,-26]
+                                  [  8,-26], [ -8,-26],
+            [ 20,-20], [ 12,-20], [  4,-20], [ -4,-20], [-12,-20], [-20,-20],
+                                  [  4,-14], [ -4,-14], 
+                       [ 20,-12], [ 12,-12], [-12,-12], [-20,-12],
+                       [  8, -8], [  2, -8], [ -2, -8], [ -8, -8], [-26, -8],
+ [ 26, -4], [ 20, -4], [ 14, -4], [  4, -4], [ -4, -4], [-22, -4],
+                       [  8, -2], [  2, -2], [ -2, -2], [ -8, -2],
+                                       [  0,  0],
+                       [  8,  2], [  2,  2], [ -2,  2], [ -8,  2],
+ [ 26,  4], [ 20,  4], [ 14,  4], [  4,  4], [ -4,  4], [-22,  4],
+                                  [  8,  8], [ -8,  8], [-26,  8],
+                                  [  3,  9], [ -3,  9],
+                       [ 20, 12], [ 12, 12], [-12, 12], [-20, 12],
+                                  [  4, 14], [ -4, 14],
+            [ 20, 20], [ 12, 20], [  4, 20], [ -4, 20], [-12, 20], [-20, 20],
+                                  [  8, 26], [ -8, 26]
 ];
-    g_d2p = 8;
 }
 
-    const [cx, cy] = get_centre_of_VF();
     const xm = g_eye == EYE_LEFT ? 1 : -1 ; 
-    if (g_sector_type == SECTOR_30) {
-        mcols = map_cols[g_onhx + 18.0][g_onhy + 2.0][g_raphe -161];
+    if (g_pattern == PATTERN_242) {
+        if (g_sector_type == SECTOR_30) {
+            mcols = map_cols[g_onhx + 18.0][g_onhy + 2.0][g_raphe -161];
+        } else {
+            mcols = map_cols_t[g_onhx + 18.0][g_onhy + 2.0][g_raphe -161];
+        }
     } else {
-        mcols = map_cols_t[g_onhx + 18.0][g_onhy + 2.0][g_raphe -161];
+        if (g_sector_type == SECTOR_30) {
+            mcols = map_cols_G[g_onhx + 18.0][g_onhy + 2.0][g_raphe -161];
+        } else {
+            mcols = map_cols_G_t[g_onhx + 18.0][g_onhy + 2.0][g_raphe -161];
+        }
     }
+
+    //assert(mcols.length == locs.length);
 
         // draw VF
     const radius = scale(g_radius_vf_loc);
     for (var i = 0 ; i < locs.length ; i++) {
-        var x = scale(cx + xm * locs[i][0] * g_d2p);
-        var y = yscale(cy - locs[i][1] * g_d2p);      // note - as (0,0) is top left
+        var x = scale(g_cx + xm * locs[i][0] * g_d2p);
+        var y = yscale(g_cy - locs[i][1] * g_d2p);      // note - as (0,0) is top left
 
         var sector = mcols[i]-1; // note -1 as javascript starts at 0
         if (g_highlighted_sector_in_vf - 100 == sector) {
             ctx.beginPath();
-            ctx.arc(x, y, 2*radius, 0, 2 * Math.PI, false);
             ctx.fillStyle = "#cccccc";
             ctx.strokeStyle = "#cccccc";
+            ctx.arc(x, y, 2*radius, 0, 2 * Math.PI, false);
             ctx.fill();
             ctx.closePath();
         }
         ctx.beginPath();
-        ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
         ctx.strokeStyle = g_scols[sector];
         ctx.fillStyle = g_scols[sector];
+        ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
         ctx.fill();
         ctx.closePath();
 
         g_regions.push([x, y, sector]);
     }
-    ctx.stroke();
 }
 
     // draw axes of VF and sliders for ONH x y adjustment
 function draw_axes(ctx) {
     const xm = g_eye == EYE_LEFT ? 1 : -1 ; 
-    const [cx, cy] = get_centre_of_VF();
+
+    const x_axis_y = g_cy +28*g_d2p;  // virtual pixels
+    const y_axis_x = g_cx -33*g_d2p;  // virtual pixels
+    const tick_len = 1.0 * g_d2p;     // virtual pixels
 
         // draw axes
-    ctx.fillStyle = "#000000";
+    ctx.fillStyle = "black";
     ctx.strokeStyle = "black";
     ctx.lineWidth=1;
-    ctx.beginPath();
-    ctx.moveTo(scale(cx - 27*g_d2p), yscale(cy +25*g_d2p)); // x-axis
-    ctx.lineTo(scale(cx + 27*g_d2p), yscale(cy +25*g_d2p));
-    ctx.moveTo(scale(g_axis_width), yscale(cy -21*g_d2p));  // y-axis
-    ctx.lineTo(scale(g_axis_width), yscale(cy +21*g_d2p));
+    ctx.moveTo(scale(g_cx - 27*g_d2p), yscale(x_axis_y)); // x-axis
+    ctx.lineTo(scale(g_cx + 27*g_d2p), yscale(x_axis_y));
+    ctx.moveTo(scale(y_axis_x), yscale(g_cy -27*g_d2p));  // y-axis
+    ctx.lineTo(scale(y_axis_x), yscale(g_cy +27*g_d2p));  
+
     ctx.font= scale(20) + "px Arial";
     ctx.textBaseline="middle"; 
     for (i = -27 ; i <= 27 ; i += 6) {
-        ctx.moveTo(scale(cx + i*g_d2p), yscale(cy +25*g_d2p)); // x-ticks
-        ctx.lineTo(scale(cx + i*g_d2p), yscale(cy +26*g_d2p));
-        ctx.textAlign = "center";
-        ctx.fillText(i, scale(cx + i*g_d2p), yscale(cy + 27.3*g_d2p));
+            // x-ticks
+        const x = scale(g_cx + i*g_d2p);
+        ctx.moveTo(x, yscale(x_axis_y)); 
+        ctx.lineTo(x, yscale(x_axis_y + tick_len));
+        ctx.textAlign = "center"; // below?
+        ctx.fillText(i, x, yscale(x_axis_y + tick_len + 20/2));
 
-        if (Math.abs(i) <= 21) {  // y-ticks
-            ctx.moveTo(scale(g_axis_width),     yscale(cy + i*g_d2p));
-            ctx.lineTo(scale(g_axis_width/1.2), yscale(cy + i*g_d2p));
-            ctx.textAlign = "right";
-            ctx.fillText(-i, scale(g_axis_width/1.2), yscale(cy + i*g_d2p));
-        }
+            // y-ticks
+        const y = yscale(g_cy + i*g_d2p);
+        ctx.moveTo(scale(y_axis_x - tick_len), y);   
+        ctx.lineTo(scale(y_axis_x)           , y);
+        ctx.textAlign = "right";
+        ctx.fillText(-i, scale(y_axis_x - tick_len), y);
     }
     ctx.stroke();
 
-        // draw ONHX slider 
+        // axis sliders
+    ctx.beginPath();
     ctx.font = scale(20) + "px Arial";
     ctx.fillStyle = "purple";
     ctx.strokeStyle = "purple";
     ctx.textBaseline="middle"; 
-    const tx = scale(cx + xm * g_onhx * g_d2p);
-    const ty = yscale(g_cheight - g_axis_width/3);
-    ctx.fillText("ONH " + xm * g_onhx, tx, ty);
-    ctx.moveTo(tx, yscale(g_cheight - g_axis_width/2));
-    ctx.lineTo(tx, yscale(g_cheight - g_axis_width));
+
+        // draw ONHX slider 
+    var tx = scale(g_cx + xm * g_onhx * g_d2p);
+    var ty = yscale(x_axis_y + 4.0 * g_d2p);
+    ctx.textAlign = "center";
+    ctx.fillText("ONH " + xm * g_onhx, tx, ty + yscale(1.0 * g_d2p));
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(tx, yscale(x_axis_y));
     ctx.stroke();
-    ctx.strokeStyle = "black";
     g_regions.push([tx, ty, REGION_ONHX]);
 
         // draw ONHY slider 
-    ctx.font = scale(20) + "px Arial";
-    ctx.fillStyle = "purple";
-    ctx.strokeStyle = "purple";
-    ctx.textBaseline="middle"; 
-    const ttx = scale(33);
-    const tty = yscale(cy + g_d2p * g_onhy);
-    ctx.fillText("ONH " + g_onhy, ttx, tty);
-    ctx.moveTo(scale(33 + 30), tty);
-    ctx.lineTo(scale(g_axis_width * 1.1), tty);
+    tx = scale(y_axis_x - 3.0 * g_d2p);
+    ty = yscale(g_cy + g_d2p * g_onhy);
+    ctx.textAlign = "right";
+    ctx.fillText("ONH " + g_onhy, tx, ty);
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(scale(y_axis_x), ty);
     ctx.stroke();
-    ctx.strokeStyle = "black";
-    g_regions.push([ttx, tty, REGION_ONHY]);
+    g_regions.push([tx, ty, REGION_ONHY]);
+
+    ctx.closePath();
 }
 
     // draw onh and raphe and fodi line
 function draw_onh_and_raphe(ctx) {
     const xm = g_eye == EYE_LEFT ? 1 : -1 ; 
-    const [cx, cy] = get_centre_of_VF();
 
-        // draw blind spot (onh) on VF (so y is cy +, not cy -)
-    var x = scale(cx + xm * g_d2p * g_onhx);
-    var y = yscale(cy + g_d2p * g_onhy);
+        // draw blind spot (onh) on VF (so y is g_cy +, not g_cy -)
+    var x = scale(g_cx + xm * g_d2p * g_onhx);
+    var y = yscale(g_cy + g_d2p * g_onhy);
     ctx.beginPath();
     ctx.arc(x, y, scale(1.3 * g_radius_vf_loc), 0, 2 * Math.PI, false);
+    ctx.strokeStyle = 'black';
     ctx.fillStyle = 'black';
     ctx.fill();
+    ctx.closePath();
 
-        // draw raphe on VF (so y is cy +, not cy -)
+        // draw raphe on VF (so y is g_cy +, not g_cy -)
     var onhAngle = Math.atan2(g_onhy, xm * g_onhx)*180/Math.PI;
     var rAngle = onhAngle - g_raphe;
     if (g_eye == EYE_RIGHT)
          rAngle = onhAngle + g_raphe;
 
-    raphe_end_x = scale (cx + 30 * g_d2p * Math.cos(rAngle/180*Math.PI));
-    raphe_end_y = yscale(cy + 30 * g_d2p * Math.sin(rAngle/180*Math.PI));
-    ctx.beginPath();
-    ctx.moveTo(scale(cx), yscale(cy));
+    raphe_end_x = scale (g_cx + 30 * g_d2p * Math.cos(rAngle/180*Math.PI));
+    raphe_end_y = yscale(g_cy + 30 * g_d2p * Math.sin(rAngle/180*Math.PI));
+    ctx.moveTo(scale(g_cx), yscale(g_cy));
     ctx.lineTo(raphe_end_x, raphe_end_y);
-    ctx.moveTo(scale(cx), yscale(cy));      // line to onh
+    ctx.moveTo(scale(g_cx), yscale(g_cy));      // line to onh
     ctx.lineTo(x,y);
     ctx.stroke();
     ctx.beginPath();
     ctx.arc (raphe_end_x, raphe_end_y, scale(4), 0, 2*Math.PI, true);
-    ctx.fillStyle = 'black';
     ctx.fill();
     ctx.closePath();
     ctx.fillText(g_raphe, raphe_end_x, raphe_end_y+yscale(-12));
@@ -307,11 +273,10 @@ function draw_onh_and_raphe(ctx) {
 
     // draw ONH key
 function draw_onh_key(ctx) {
-    const [cx, cy] = get_centre_of_VF();
 
     const onh_key_radius = scale(g_onh_key_radius);
-    const onh_key_x = scale(g_axis_width + g_cwidth * 12 / 16);
-    const onh_key_y = yscale(cy); 
+    const onh_key_x = scale(g_cx + 48 * g_d2p);
+    const onh_key_y = yscale(g_cy); 
 
     for (i = 0 ; i < g_secs.length ; i++) {
         explode_factor = i == g_exploding_sector ? scale(10) : 0;
@@ -333,6 +298,7 @@ function draw_onh_key(ctx) {
         ctx.lineTo(xx,yy/1.3);
         ctx.fillStyle = g_scols[i];
         ctx.fill();
+        ctx.closePath();
         ctx.restore();
 
         g_regions.push([xx + onh_key_radius/2*Math.cos(theta), 
@@ -376,41 +342,18 @@ function draw_canvas() {
     //ctx.stroke();
 
     const xm = g_eye == EYE_LEFT ? 1 : -1 ; 
-    const [cx, cy] = get_centre_of_VF();
 
     g_regions = [];  // reset regions
+
+        // Draw OS/OD
+    ctx.font = scale(30) + "px Arial";
+    ctx.fillText(g_eye == EYE_LEFT ? "OS" : "OD", scale(g_cx + 28*g_d2p), yscale(g_cy - 22*g_d2p));
+    //g_regions.push([scale(g_cx + 28*g_d2p), yscale(g_cy - 22*g_d2p), REGION_EYE]);
 
     draw_vf_locs(ctx);
     draw_axes(ctx);
     draw_onh_and_raphe(ctx);
     draw_onh_key(ctx);
-
-    /*
-        // draw Eye Label Region
-    ctx.textBaseline="middle"; 
-    ctx.font = scale(30) + "px Arial";
-    ctx.fillText(g_eye == EYE_LEFT ? "OS" : "OD" , scale(g_axis_width + 50), yscale(50));
-    g_regions.push([scale(100), yscale(50), REGION_EYE]);
-
-        // draw Pattern
-    ctx.textBaseline="middle"; 
-    ctx.font = scale(30) + "px Arial";
-    ctx.fillText(g_pattern == PATTERN_242 ? "24-2" : "G" , scale(g_axis_width + 50), yscale(100));
-    g_regions.push([scale(g_axis_width + 50), yscale(100), REGION_PATTERN]);
-
-        // draw params
-    ctx.textBaseline="middle"; 
-    ctx.font = scale(20) + "px Arial";
-    ss = "ONH = (" + g_onhx * (g_eye == EYE_RIGHT ? -1 : 1) + ", " + g_onhy + ")";
-    ctx.fillText(ss, scale(g_cwidth - 90), yscale(g_cheight - 50));
-    ss = "DiFoRaphe = " + g_raphe;
-    ctx.fillText(ss, scale(g_cwidth - 130), yscale(g_cheight - 20));
-
-        // draw ted/30 swapper
-    ss = g_sector_type == SECTOR_30 ? "Teds" : "30";
-    ctx.fillText(ss, scale(g_cwidth - 90), yscale(g_cheight - 100));
-    g_regions.push([scale(g_cwidth - 90), yscale(g_cheight - 100), REGION_SECS]);
-    */
 
     const button_left = 680;   // virtual coords
     const button_top = 430;
@@ -422,18 +365,6 @@ function draw_canvas() {
         g_img.onload = function() {ctx.drawImage(g_img, scale(button_left), yscale(button_top), dWidth=scale(button_all_w),
 dHeight=yscale(button_height));};
     }
-    /*
-    ctx.beginPath();
-    ctx.arc(scale(button_left + 25), yscale(button_top + button_height/2), scale(10), 0, 2*Math.PI);
-    ctx.arc(scale(button_left + 3.5*25), yscale(button_top + button_height/2), scale(10), 0, 2*Math.PI);
-    ctx.arc(scale(button_left + 6*25), yscale(button_top + button_height/2), scale(10), 0, 2*Math.PI);
-    ctx.arc(scale(button_left + 8.5*25), yscale(button_top + button_height/2), scale(10), 0, 2*Math.PI);
-    ctx.arc(scale(button_left + 11*25), yscale(button_top + button_height/2), scale(10), 0, 2*Math.PI);
-    ctx.fillStyle = "#ff0000";
-    ctx.strokeStyle = "#ff0000";
-    ctx.fill();
-    ctx.closePath();
-    */
     g_regions.push([scale(button_left +    25), yscale(button_top + button_height/2), REGION_EYE]);
     g_regions.push([scale(button_left + 3.5*25), yscale(button_top + button_height/2), REGION_PATTERN]);
     g_regions.push([scale(button_left + 6.0*25), yscale(button_top + button_height/2), REGION_SECS]);
@@ -460,13 +391,12 @@ window.onload = function() {
     // Return new g_onhx,g_onhy in virtual coords.
     // And redraw
 function set_new_onh(x,y) {
-    const [cx,cy] = get_centre_of_VF();
 
     var x_deg = g_onhx;
     var y_deg = g_onhy;
 
-    if (!isNaN(x)) { x_deg = -1 * Math.abs(Math.round((unscale(x) - cx) / g_d2p)); }
-    if (!isNaN(y)) { y_deg = Math.round((yunscale(y) - cy) / g_d2p);}
+    if (!isNaN(x)) { x_deg = -1 * Math.abs(Math.round((unscale(x) - g_cx) / g_d2p)); }
+    if (!isNaN(y)) { y_deg = Math.round((yunscale(y) - g_cy) / g_d2p);}
     
     if (x_deg < -18) x_deg = -18;
     if (x_deg > -12) x_deg = -12;
@@ -482,10 +412,9 @@ function set_new_onh(x,y) {
     // from (x,y) in real canvas coords, get new g_raphe.
     // And redraw
 function set_new_raphe(x,y) {
-    const [cx,cy] = get_centre_of_VF();
 
-    var x_deg = (unscale(x) - cx) / g_d2p;
-    var y_deg = (yunscale(y) - cy) / g_d2p;
+    var x_deg = (unscale(x) - g_cx) / g_d2p;
+    var y_deg = (yunscale(y) - g_cy) / g_d2p;
 
     const xm = g_eye == EYE_RIGHT ? -1 : 1;
     var fo_raphe = Math.atan2(y_deg,  xm * x_deg);   // for right eye
