@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        html,body { 
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+        }
+        #canvasImage {
+            width: 70%;
+            height: 100%;
+        }
+        #buttons {
+            width: 30%;
+            position: absolute;
+            right: 0%;
+            top: 0%;
+        }
+    </style>
+    <script type="text/javascript" src="scaleable_canvas.js"></script>
+    <script type="text/javascript" src="loadOCT.js"></script>
+</head>
+
+<body onresize="draw_canvas();">
+    <canvas id="canvasImage"> </canvas>
+
+    <div id="buttons">
+        <input type="file" id="input_file"/>
+        <p>ONHX: <label id="onhx"> 0 </label></p>
+        <p>ONHY: <label id="onhy"> 0 </label></p>
+        <!-- 
+            <p>DiFoRaphe: <label id="raphe"> 0 </label></p>
+            <p>mm per pix: <label id="mm_per_pixel"> 0 </label></p>
+        -->
+        <p> Click on the fovea, 3.5mm ring and ONH centre in that order.
+    </div>
+
+    <script type="text/javascript">
+        draw_canvas(); 
+    </script>
+</body>
+
+</html>

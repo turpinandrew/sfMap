@@ -76,6 +76,8 @@ const DRAG_ONHY = 4
 
 var g_dragging = DRAG_NONE;
 
+var g_last_touch = [0,0];   // store the last touch for touchend event
+
 const PATTERN_242 = 0;
 const PATTERN_G = 1;
 var g_pattern = PATTERN_242;
@@ -154,13 +156,18 @@ function draw_vf_locs(ctx) {
             ctx.fillStyle = "#cccccc";
             ctx.strokeStyle = "#cccccc";
             ctx.arc(x, y, 2*radius, 0, 2 * Math.PI, false);
+            ctx.stroke();
             ctx.fill();
             ctx.closePath();
         }
         ctx.beginPath();
+        ctx.closePath();
+        ctx.closePath();
+        ctx.beginPath();
         ctx.strokeStyle = g_scols[sector];
         ctx.fillStyle = g_scols[sector];
         ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
+        ctx.stroke();
         ctx.fill();
         ctx.closePath();
 
@@ -173,7 +180,7 @@ function draw_axes(ctx) {
     const xm = g_eye == EYE_LEFT ? 1 : -1 ; 
 
     const x_axis_y = g_cy +28*g_d2p;  // virtual pixels
-    const y_axis_x = g_cx -33*g_d2p;  // virtual pixels
+    const y_axis_x = g_cx -35*g_d2p;  // virtual pixels
     const tick_len = 1.0 * g_d2p;     // virtual pixels
 
         // draw axes
@@ -214,6 +221,7 @@ function draw_axes(ctx) {
         // draw ONHX slider 
     var tx = scale(g_cx + xm * g_onhx * g_d2p);
     var ty = yscale(x_axis_y + 4.0 * g_d2p);
+    ctx.font = scale(18) + "px Arial";
     ctx.textAlign = "center";
     ctx.fillText("ONH " + xm * g_onhx, tx, ty + yscale(1.0 * g_d2p));
     ctx.moveTo(tx, ty);
@@ -248,6 +256,15 @@ function draw_onh_and_raphe(ctx) {
     ctx.fill();
     ctx.closePath();
 
+    ctx.font = scale(20) + "px Arial";
+    ctx.textAlign = "left";
+    var fodi = Math.atan2(g_onhy/180.0*Math.PI, g_onhx/180.0*Math.PI)*180/Math.PI;
+    if (fodi < -20) {
+        fodi = fodi + 360
+    }
+    fodi = (fodi - 180).toFixed(1);
+    ctx.fillText("FoDi "+fodi+"\xB0", scale(g_cx - 30*g_d2p), yscale(g_cy + 23*g_d2p));
+
         // draw raphe on VF (so y is g_cy +, not g_cy -)
     var onhAngle = Math.atan2(g_onhy, xm * g_onhx)*180/Math.PI;
     var rAngle = onhAngle - g_raphe;
@@ -265,7 +282,12 @@ function draw_onh_and_raphe(ctx) {
     ctx.arc (raphe_end_x, raphe_end_y, scale(4), 0, 2*Math.PI, true);
     ctx.fill();
     ctx.closePath();
-    ctx.fillText(g_raphe, raphe_end_x, raphe_end_y+yscale(-12));
+    if (g_eye == EYE_RIGHT) {
+        ctx.textAlign = "right";
+    } else {
+        ctx.textAlign = "left";
+    }
+    ctx.fillText(g_raphe+"\xB0", raphe_end_x, raphe_end_y+yscale(-12));
 
     g_regions.push([x, y, REGION_ONH]);
     g_regions.push([raphe_end_x, raphe_end_y, REGION_RAPHE_END]);
@@ -380,7 +402,7 @@ window.onload = function() {
     c.addEventListener('touchstart', handle_clicks, false);
 
     c.addEventListener('mousedown', handle_mousedown, false);
-    c.addEventListener('touchmove', handle_mousedown, false);
+    c.addEventListener('touchmove', handle_mousemove, false);
 
     c.addEventListener('mouseup', handle_mouseup, false);
     c.addEventListener('touchend', handle_mouseup, false);
@@ -432,16 +454,13 @@ function set_new_raphe(x,y) {
 // return [x,y,label,min_distance] for event e
 // min_distance is square of pixel distance in real pixels
 function get_xy_from_event(e) {
-    if (e.type == 'touchend') { return [0,0,REGION_NONE,0]; }
 
     var x = 0;
     var y = 0;
     if (e.type == 'touchstart' || e.type == 'touchmove') {
-console.log("TC " + e.touches[0].clientX + " " + e.touches[0].clientY);
         x = e.touches[0].clientX;
         y = e.touches[0].clientY;
     } else {
-console.log("MC " + e.clientX + " " + e.clientY);
         x = e.clientX;
         y = e.clientY;
     }
@@ -451,7 +470,6 @@ console.log("MC " + e.clientX + " " + e.clientY);
         x = x/rect.width * can.width;
         y = y/rect.height * can.height;
 
-console.log(x + " " + y + " " + g_dragging);
 
     min_i = -1;
     min_d = g_cwidth * g_cwidth * g_cheight;
@@ -511,24 +529,13 @@ function handle_mousedown(e) {
     e.stopPropagation();
 
     const [x, y, label, min_d] = get_xy_from_event(e);
+    g_last_touch = [x,y];
     check_drag(label);
 }
 
 function handle_mouseup(e) {
     e.preventDefault();
     e.stopPropagation();
-
-    const [x, y, label, min_d] = get_xy_from_event(e);
-
-    if (g_dragging == DRAG_ONH) {
-        set_new_onh(x,y);
-    } else if (g_dragging == DRAG_ONHX) {
-        set_new_onh(x, Number.NaN);
-    } else if (g_dragging == DRAG_ONHY) {
-        set_new_onh(Number.NaN, y);
-    } else if (g_dragging == DRAG_RAPHE) {
-        set_new_raphe(x, y);
-    }
     g_dragging = DRAG_NONE;
 }
 
@@ -554,20 +561,21 @@ function handle_clicks(e) {
 
     if (label == REGION_HELP) {
         alert("\
-The ONH, purple text, raphe end are all draggable.\n\
-Eye button switches left/right eyes.\n\
-Pattern button toggles 242-2 and G patterns.\n\
-Wheel button toggles Garway-Heath and 30 degree sectors.\n\
-OCT button allows you to derive parameters from an image file.\n\
-? button is this help.\n\n\
+You can drag the ONH, purple text, and raphe end.\n\
+The Eye button switches left and right eyes.\n\
+The Pattern button toggles 24-2 (HFA) and G pattern (Octopus).\n\
+The Wheel button toggles Garway-Heath sectors and 30 degree sectors.\n\
+The Image button allows you to derive parameters from an image file.\n\
+The ? button is this help.\n\n\
 This is a subset of the maps generated from improvements to \
-Dennis et al., Invest Ophthalmol Vis Sci. 53(11) 2012. Pages 6981-6990. \
-The method can generate a map for any inputs or visual field patterns.\
+Turpin and McKendrick 2020, Under submission.\
 ");
+//Dennis et al., Invest Ophthalmol Vis Sci. 53(11) 2012. Pages 6981-6990. \
+//The method can generate a map for any inputs or visual field patterns.\
     }
 
     if (label == REGION_FILE) {
-        alert("Coming soon");
+        window.open("./load_file.html");
     }
 
     if (e.type == "touchstart") {
