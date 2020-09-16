@@ -67,6 +67,7 @@ const REGION_SECS      = 18;
 const REGION_FILE      = 19;
 const REGION_HELP      = 20;
 const REGION_NONE      = 21;
+const REGION_DOWNLOAD  = 22;
 
 const DRAG_NONE = 0
 const DRAG_ONH = 1
@@ -82,8 +83,10 @@ const PATTERN_242 = 0;
 const PATTERN_G = 1;
 var g_pattern = PATTERN_242;
 
-var g_img = new Image();
-g_img.src = "./buttons.png";
+var g_img_top = new Image();
+g_img_top.src = "./buttons1.png";
+var g_img_bot = new Image();
+g_img_bot.src = "./buttons2.png";
 
     // Return Euclidean distance between image_points[i1] and image_points[i2]
 function distance(i1, i2) {
@@ -377,21 +380,30 @@ function draw_canvas() {
     draw_onh_and_raphe(ctx);
     draw_onh_key(ctx);
 
-    const button_left = 680;   // virtual coords
-    const button_top = 430;
+    const button_left = 680+68;   // virtual coords
+    const button_top_top =  35;
+    const button_top_bot = 460;
     const button_height = 55;
-    const button_all_w = 300;
-    if (g_img.complete) {
-        ctx.drawImage(g_img, scale(button_left), yscale(button_top), dWidth=scale(button_all_w), dHeight=yscale(button_height));
+    const button_all_w = 180;
+    if (g_img_bot.complete) {
+        ctx.drawImage(g_img_bot, scale(button_left), yscale(button_top_bot), dWidth=scale(button_all_w), dHeight=yscale(button_height));
     } else {
-        g_img.onload = function() {ctx.drawImage(g_img, scale(button_left), yscale(button_top), dWidth=scale(button_all_w),
+        g_img_bot.onload = function() {ctx.drawImage(g_img_bot, scale(button_left), yscale(button_top_bot), dWidth=scale(button_all_w),
 dHeight=yscale(button_height));};
     }
-    g_regions.push([scale(button_left +    25), yscale(button_top + button_height/2), REGION_EYE]);
-    g_regions.push([scale(button_left + 3.5*25), yscale(button_top + button_height/2), REGION_PATTERN]);
-    g_regions.push([scale(button_left + 6.0*25), yscale(button_top + button_height/2), REGION_SECS]);
-    g_regions.push([scale(button_left + 8.5*25), yscale(button_top + button_height/2), REGION_FILE]);
-    g_regions.push([scale(button_left + 11 *25), yscale(button_top + button_height/2), REGION_HELP]);
+    g_regions.push([scale(button_left +  80/580*button_all_w), yscale(button_top_bot + button_height/2), REGION_FILE]);
+    g_regions.push([scale(button_left + 290/580*button_all_w), yscale(button_top_bot + button_height/2), REGION_DOWNLOAD]);
+    g_regions.push([scale(button_left + 493/580*button_all_w), yscale(button_top_bot + button_height/2), REGION_HELP]);
+
+    if (g_img_top.complete) {
+        ctx.drawImage(g_img_top, scale(button_left), yscale(button_top_top), dWidth=scale(button_all_w), dHeight=yscale(button_height));
+    } else {
+        g_img_top.onload = function() {ctx.drawImage(g_img_top, scale(button_left), yscale(button_top_top), dWidth=scale(button_all_w),
+dHeight=yscale(button_height));};
+    }
+    g_regions.push([scale(button_left +  90/591*button_all_w), yscale(button_top_top + button_height/2), REGION_EYE]);
+    g_regions.push([scale(button_left + 295/591*button_all_w), yscale(button_top_top + button_height/2), REGION_PATTERN]);
+    g_regions.push([scale(button_left + 503/591*button_all_w), yscale(button_top_top + button_height/2), REGION_SECS]);
 }
 
 window.onresize = function() { draw_canvas(); } 
@@ -566,9 +578,10 @@ The Eye button switches left and right eyes.\n\
 The Pattern button toggles 24-2 (HFA) and G pattern (Octopus).\n\
 The Wheel button toggles Garway-Heath sectors and 30 degree sectors.\n\
 The Image button allows you to derive parameters from an image file.\n\
+The Download button takes you to a simple interface to get angles in a csv file.\n\
 The ? button is this help.\n\n\
 This is a subset of the maps generated from improvements to \
-Turpin and McKendrick 2020, Under submission.\
+Turpin and McKendrick, Under submission Sep 2020.\n\
 ");
 //Dennis et al., Invest Ophthalmol Vis Sci. 53(11) 2012. Pages 6981-6990. \
 //The method can generate a map for any inputs or visual field patterns.\
@@ -576,6 +589,10 @@ Turpin and McKendrick 2020, Under submission.\
 
     if (label == REGION_FILE) {
         window.open("./load_file.html");
+    }
+
+    if (label == REGION_DOWNLOAD) {
+        window.open("./download.html");
     }
 
     if (e.type == "touchstart") {

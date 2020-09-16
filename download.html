@@ -1,0 +1,83 @@
+
+<script type="text/javascript">
+
+const SERVER_URL_AND_PORT = 'http://localhost:8000';
+
+const g_tfd2="9,-21,3,-21,-3,-21,-9,-21,15,-15,9,-15,3,-15,-3,-15,-9,-15,-15,-15,21,-9,15,-9,9,-9,3,-9,-3,-9,-9,-9,-15,-9,-21,-9,21,-3,15,-3,9,-3,3,-3,-3,-3,-9,-3,-15,-3,-21,-3,21,3,15,3,9,3,3,3,-3,3,-9,3,-15,3,-21,3,21,9,15,9,9,9,3,9,-3,9,-9,9,-15,9,-21,9,15,15,9,15,3,15,-3,15,-9,15,-15,15,9,21,3,21,-3,21,-9,21,27,3,27,-3"
+
+const g_G_pattern="8,-26,-8,-26,20,-20,12,-20,4,-20,-4,-20,-12,-20,-20,-20,4,-14,-4,-14,20,-12,12,-12,-12,-12,-20,-12,8,-8,2,-8,-2,-8,-8,-8,-26,-8,26,-4,20,-4,14,-4,4,-4,-4,-4,-22,-4,8,-2,2,-2,-2,-2,-8,-2,0,0,8,2,2,2,-2,2,-8,2,26,4,20,4,14,4,4,4,-4,4,-22,4,8,8,-8,8,-26,8,3,9,-3,9,20,12,12,12,-12,12,-20,12,4,14,-4,14,20,20,12,20,4,20,-4,20,-12,20,-20,20,8,26,-8,26"
+
+var readFile = function(event) {
+    var input = event.target;
+
+    var reader = new FileReader();
+    reader.onload = function(){
+        var text = reader.result;
+        var node = document.getElementById('output');
+        node.innerText = text;
+        console.log(reader.result.substring(0, 200));
+    };
+    reader.readAsText(input.files[0]);
+
+    document.getElementById("other").checked = true;
+};
+
+function submit() {
+    var onhx = document.getElementById('onhx').value
+    var onhy = document.getElementById('onhy').value
+    var axl = document.getElementById('axl').value
+    var nod = document.getElementById('nod').value
+    var fodiraph = document.getElementById('fodiraph').value
+    
+    var cgi_str = SERVER_URL_AND_PORT + "?";
+    cgi_str += "onhx=" + onhx;
+    cgi_str += "&onhy=" + onhy;
+    cgi_str += "&axial_length=" + axl;
+    cgi_str += "&nodal_length=" + nod;
+    cgi_str += "&fodi_raphe=" + fodiraph;
+
+    if (document.getElementById('tfd2').checked) { 
+        cgi_str += "&xy=" + g_tfd2;
+    } else if (document.getElementById('gpat').checked) { 
+        cgi_str += "&xy=" + g_G_pattern;
+    } else {
+        cgi_str += "&xy=" + readFile;
+    }
+
+    window.location = cgi_str;
+}
+
+
+</script>
+
+
+<p>Enter the 4 paramters, choose a location pattern or specify a file with 2 space seperated columns of X and Y.
+
+<p>Note that axial length and nodal length are used to map the ONHX, ONHY and locations onto the retina, so you should use the values that underly your measuremnts of ONHX
+and ONHY. (eg If you derived your ONHX and ONHY from Spectralis images, use the default parameters.)
+
+<p>When you click submit it might take a minute for the results to come back. Be patient.
+
+<hr>
+
+  <table>
+  
+  <tr><td>ONHX (degrees of visual angle, <0 left eye) </td><td><input type="text" id="onhx" name="onhx" value="-15"></tr>
+
+  <tr><td>ONHY (degrees of visual angle)</td><td><input type="text" id="onhy" name="onhy" value="2"></tr>
+
+  <tr><td>Axial length (mm) </td><td><input type="text" id="axl" name="axl" value="24.385"></tr>
+
+  <tr><td>Nodal length (mm) </td><td><input type="text" id="nod" name="nod" value="17.185"></tr>
+
+  <tr><td>FoDiRaphe angle (degrees) </td><td><input type="text" id="fodiraph" name="fodiraph" value="174"></tr>
+
+  <tr><td>24-2      <input type="radio" id="tfd2" name="locations" value="tfd2" checked="true"></td></tr>
+  <tr><td>G pattern <input type="radio" id="gpat" name="locations" value="gpat"></td></tr>
+  <tr><td>Other     <input type="radio" id="other" name="locations" value="other"><input type="file" id="myfile" onchange='readFile(event)'></td></tr>
+
+  </table>
+<input hidden type="text" id="output">
+<hr>
+
+    <button onclick="submit()">Submit</button>
